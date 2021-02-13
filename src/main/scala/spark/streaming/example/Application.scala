@@ -1,37 +1,60 @@
 package spark.streaming.example
 
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.streaming.dstream.{DStream, ReceiverInputDStream}
 import org.apache.spark._
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.streaming._
 
 object Application extends App {
   val logger: Logger = Logger.getLogger(this.getClass.getCanonicalName)
+
   def setStreamingLogLevels(): Unit = {
     val log4jInitialized: Boolean = Logger.getRootLogger.getAllAppenders.hasMoreElements
     if (!log4jInitialized) {
-      // We first log something to initialize Spark's default logging, then we override the
+      // We first log something to initialize Spark"s default logging, then we override the
       // logging level.
       logger.info("Setting log level to [WARN] for streaming example." +
         " To override add a custom log4j.properties to the classpath.")
       Logger.getRootLogger.setLevel(Level.WARN)
     }
   }
-  setStreamingLogLevels()
 
-  // Create a local StreamingContext with two working thread and batch interval of 1 second.
-  // The master requires 2 cores to prevent a starvation scenario.
+  setStreamingLogLevels() // TODO this doesn"t seem to be working
 
   val conf: SparkConf = new SparkConf().setMaster("spark://spark-master:7077").setAppName("NetworkWordCount")
-  val ssc = new StreamingContext(conf, Seconds(1))
+  val streamingContext = new StreamingContext(conf, Seconds(1))
+  val sparkContext = new SparkContext(config = conf)
+  val spark = SparkSession
+    .builder()
+    .appName("Spark SQL basic example")
+    .config("spark.some.config.option", "some-value")
+    .getOrCreate()
 
-  val lines: ReceiverInputDStream[String] = ssc.socketTextStream("localhost", 9999)
-  val words: DStream[String] = lines.flatMap((_: String).split(" "))
-  val pairs: DStream[(String, Int)] = words.map((word: String) => (word, 1))
-  val wordCounts: DStream[(String, Int)] = pairs.reduceByKey((_: Int) + (_: Int))
+  val static = spark.read.json("/opt/spark-data/")
+  val schema = StructType(List(
+    StructField("op", StringType),
+    StructField("after", StringType)
+  ))
 
-  // Print the first ten elements of each RDD generated in this DStream to the console
-  wordCounts.print()
-  ssc.start()             // Start the computation
-  ssc.awaitTermination()  // Wait for the computation to terminate
+  static
+    .withColumn("table", element_at(split(col("__topic"), "\\.", 3), 3))
+    .withColumn("value", from_json(col("value"), schema))
+    .select(
+      col("__key"),
+      col("__offset"),
+      col("__topic"),
+      col("table"),
+      col("__partition"),
+      col("__timestamp"),
+      col("value.*")
+    )
+    .withColumnRenamed("op", "__action")
+    .withColumn("date", to_date(col("__timestamp")))
+    .transform(x => {x.printSchema();x})
+    .show(5)
+
+  streamingContext.start() // Start the computation
+  streamingContext.awaitTermination() // Wait for the computation to terminate
 }
