@@ -4,7 +4,10 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
 object Spark {
-	val conf: SparkConf = new SparkConf().setMaster("spark://spark-master:7077").setAppName("App")
+	val conf: SparkConf = new SparkConf()
+		.setMaster("spark://spark-master:7077")
+		.setAppName("App")
+		.set("spark.scheduler.mode", "FAIR")
 	val spark: SparkSession = SparkSession
 		.builder()
 		.config(conf)

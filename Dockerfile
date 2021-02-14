@@ -1,4 +1,4 @@
-FROM openjdk:8-alpine
+FROM adoptopenjdk/openjdk8:alpine-slim
 
 ARG SCALA_SDK_URL="https://downloads.lightbend.com/scala/2.12.8/scala-2.12.8.tgz"  
 ARG SCALA_SBT_URL="https://piccolo.link/sbt-1.2.8.tgz"
