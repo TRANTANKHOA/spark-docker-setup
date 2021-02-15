@@ -57,6 +57,6 @@ where `./data/output/<batch, or stream>/table1` contains the output for the cons
 the other folders next to it containing data for the sub-tables mentioned in Task #2.
 
 Task #2 mentioned doing an upsert operation in Spark, however it's not clear at the moment which columns are the primary
-keys for indexing purpose. A custom function to perform Upsert operation in Spark is provided in 
+keys for indexing purpose. A custom function to perform upsert operation in Spark provided in 
 `spark.streaming.example.Transformations.upsertUnion` for illustration purpose. Once the business context around this
-is clarify, it would be straight forward to apply this function to fulfill the requirements.
+is clarified, it will be straight forward to apply this function to fulfill the requirements.
